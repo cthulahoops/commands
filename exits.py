@@ -60,7 +60,8 @@ def set_exit_node(ip_address):
 
 @click.command()
 @click.argument('country')
-def main(country):
+@click.option('--dry-run', '-n', is_flag=True, help='Show selected node without activating it')
+def main(country, dry_run):
     """
     A script to select a Tailscale exit node by country.
     
@@ -86,7 +87,10 @@ def main(country):
         click.echo("Invalid IP address format.", err=True)
         return
 
-    set_exit_node(node_ip)
+    if dry_run:
+        click.echo(f"Would set exit node to: {node_ip} ({selected_node['hostname']}, {selected_node['city']}, {selected_node['country']})")
+    else:
+        set_exit_node(node_ip)
 
 
 if __name__ == "__main__":
