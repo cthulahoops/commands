@@ -3,6 +3,7 @@
 import subprocess
 import re
 import click
+import random
 
 
 def get_exit_node_list():
@@ -58,9 +59,12 @@ def set_exit_node(ip_address):
 
 
 @click.command()
-def main():
+@click.argument('country')
+def main(country):
     """
     A script to select a Tailscale exit node by country.
+    
+    COUNTRY: Name of the country to use (e.g. Sweden)
     """
     output = get_exit_node_list()
     nodes = parse_exit_nodes(output)
@@ -70,55 +74,13 @@ def main():
         click.echo("No exit nodes found.", err=True)
         return
 
-    click.echo("Available Countries:")
-    for i, country in enumerate(countries):
-        click.echo(f"{i+1}. {country}")
-
-    country_choice = click.prompt(
-        "Enter the number of the country you want to use (or 'q' to quit)",
-        type=str,
-    )
-
-    if country_choice.lower() == "q":
-        click.echo("Exiting.")
+    if country not in countries:
+        click.echo(f"Error: {country} not found. Available countries: {', '.join(countries)}", err=True)
         return
 
-    try:
-        country_index = int(country_choice) - 1
-        selected_country = countries[country_index]
-    except (ValueError, IndexError):
-        click.echo(
-            "Invalid country choice. Please enter a number from the list.",
-            err=True,
-        )
-        return
-
-    filtered_nodes = [node for node in nodes if node["country"] == selected_country]
-
-    click.echo(f"Available Exit Nodes in {selected_country}:")
-    for i, node in enumerate(filtered_nodes):
-        click.echo(
-            f"{i+1}. IP: {node['ip']}, Hostname: {node['hostname']}, City: {node['city']}"
-        )
-
-    node_choice = click.prompt(
-        "Enter the number of the exit node you want to use (or 'q' to return to country selection)",
-        type=str,
-    )
-
-    if node_choice.lower() == "q":
-        return
-
-    try:
-        node_index = int(node_choice) - 1
-        selected_node = filtered_nodes[node_index]
-        node_ip = selected_node["ip"]
-    except (ValueError, IndexError):
-        click.echo(
-            "Invalid exit node choice. Please enter a number from the list.",
-            err=True,
-        )
-        return
+    filtered_nodes = [node for node in nodes if node["country"] == country]
+    selected_node = random.choice(filtered_nodes)
+    node_ip = selected_node["ip"]
 
     if not re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", node_ip):
         click.echo("Invalid IP address format.", err=True)
