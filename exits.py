@@ -27,35 +27,15 @@ def parse_exit_nodes(output):
     for line in output.strip().split("\n"):
         if line.startswith("#"):
             continue
-        parts = line.split()
+        # Split on 2 or more spaces
+        parts = re.split(r'\s{2,}', line.strip())
         if len(parts) >= 4:
-            ip = parts[0]
-            hostname = parts[1]
-            
-            # Find where the country ends and city begins by looking for known countries
-            remaining_parts = parts[2:]
-            country_parts = []
-            city_parts = []
-            
-            for i in range(1, len(remaining_parts) + 1):
-                potential_country = " ".join(remaining_parts[:i])
-                rest = remaining_parts[i:]
-                if rest and potential_country in ["South Africa", "United States", "United Kingdom"]:
-                    country_parts = remaining_parts[:i]
-                    city_parts = rest
-                    break
-            
-            # If no special case found, assume first part is country and rest is city
-            if not country_parts:
-                country_parts = [remaining_parts[0]]
-                city_parts = remaining_parts[1:]
-            
             nodes.append(
                 {
-                    "ip": ip,
-                    "hostname": hostname,
-                    "country": " ".join(country_parts),
-                    "city": " ".join(city_parts),
+                    "ip": parts[0],
+                    "hostname": parts[1],
+                    "country": parts[2],
+                    "city": parts[3],
                 }
             )
     return nodes
