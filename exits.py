@@ -63,18 +63,26 @@ def set_exit_node(ip_address):
 
 @click.command()
 @click.argument('pattern')
-@click.option('--by', '-b', type=click.Choice(['country', 'city', 'hostname']), 
-              default='country', help='Field to match against')
+@click.option('--hostname', '-h', is_flag=True, help='Match against hostname instead of country')
+@click.option('--city', '-c', is_flag=True, help='Match against city instead of country')
 @click.option('--dry-run', '-n', is_flag=True, help='Show selected node without activating it')
-def main(pattern, by, dry_run):
+def main(pattern, hostname, city, dry_run):
     """
     A script to select a Tailscale exit node by matching pattern.
     
-    PATTERN: Text to match against the chosen field (e.g. Sweden, London, us-nyc)
+    PATTERN: Text to match (e.g. Sweden, London, us-nyc)
     """
     output = get_exit_node_list()
     nodes = parse_exit_nodes(output)
-    values = get_unique_values(nodes, by)
+    # Determine which field to match against
+    if hostname:
+        field = 'hostname'
+    elif city:
+        field = 'city'
+    else:
+        field = 'country'
+
+    values = get_unique_values(nodes, field)
 
     if not values:
         click.echo("No exit nodes found.", err=True)
@@ -84,15 +92,15 @@ def main(pattern, by, dry_run):
     matching_values = [v for v in values if pattern.lower() in v.lower()]
     
     if not matching_values:
-        click.echo(f"Error: No {by} matching '{pattern}' found. Available {by}s: {', '.join(values)}", err=True)
+        click.echo(f"Error: No {field} matching '{pattern}' found. Available {field}s: {', '.join(values)}", err=True)
         return
     
     if len(matching_values) > 1:
-        click.echo(f"Error: Ambiguous match '{pattern}' matches multiple {by}s: {', '.join(matching_values)}", err=True)
+        click.echo(f"Error: Ambiguous match '{pattern}' matches multiple {field}s: {', '.join(matching_values)}", err=True)
         return
         
     matched_value = matching_values[0]
-    filtered_nodes = [node for node in nodes if node[by] == matched_value]
+    filtered_nodes = [node for node in nodes if node[field] == matched_value]
     selected_node = random.choice(filtered_nodes)
     node_ip = selected_node["ip"]
 
