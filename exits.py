@@ -75,11 +75,19 @@ def main(country, dry_run):
         click.echo("No exit nodes found.", err=True)
         return
 
-    if country not in countries:
-        click.echo(f"Error: {country} not found. Available countries: {', '.join(countries)}", err=True)
+    # Find matching countries based on substring
+    matching_countries = [c for c in countries if country.lower() in c.lower()]
+    
+    if not matching_countries:
+        click.echo(f"Error: No country matching '{country}' found. Available countries: {', '.join(countries)}", err=True)
         return
-
-    filtered_nodes = [node for node in nodes if node["country"] == country]
+    
+    if len(matching_countries) > 1:
+        click.echo(f"Error: Ambiguous match '{country}' matches multiple countries: {', '.join(matching_countries)}", err=True)
+        return
+        
+    matched_country = matching_countries[0]
+    filtered_nodes = [node for node in nodes if node["country"] == matched_country]
     selected_node = random.choice(filtered_nodes)
     node_ip = selected_node["ip"]
 
