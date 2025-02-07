@@ -25,6 +25,8 @@ def parse_exit_nodes(output):
     """
     nodes = []
     for line in output.strip().split("\n"):
+        if line.startswith("#"):
+            continue
         parts = line.split()
         if len(parts) >= 4:
             nodes.append(
