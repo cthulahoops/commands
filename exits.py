@@ -41,11 +41,11 @@ def parse_exit_nodes(output):
     return nodes
 
 
-def get_unique_countries(nodes):
+def get_unique_values(nodes, field):
     """
-    Extracts a list of unique countries.
+    Extracts a list of unique values for the given field.
     """
-    return sorted(list({node["country"] for node in nodes}))
+    return sorted(list({node[field] for node in nodes}))
 
 
 def set_exit_node(ip_address):
@@ -62,35 +62,37 @@ def set_exit_node(ip_address):
 
 
 @click.command()
-@click.argument('country')
+@click.argument('pattern')
+@click.option('--by', '-b', type=click.Choice(['country', 'city', 'hostname']), 
+              default='country', help='Field to match against')
 @click.option('--dry-run', '-n', is_flag=True, help='Show selected node without activating it')
-def main(country, dry_run):
+def main(pattern, by, dry_run):
     """
-    A script to select a Tailscale exit node by country.
+    A script to select a Tailscale exit node by matching pattern.
     
-    COUNTRY: Name of the country to use (e.g. Sweden)
+    PATTERN: Text to match against the chosen field (e.g. Sweden, London, us-nyc)
     """
     output = get_exit_node_list()
     nodes = parse_exit_nodes(output)
-    countries = get_unique_countries(nodes)
+    values = get_unique_values(nodes, by)
 
-    if not countries:
+    if not values:
         click.echo("No exit nodes found.", err=True)
         return
 
-    # Find matching countries based on substring
-    matching_countries = [c for c in countries if country.lower() in c.lower()]
+    # Find matching values based on substring
+    matching_values = [v for v in values if pattern.lower() in v.lower()]
     
-    if not matching_countries:
-        click.echo(f"Error: No country matching '{country}' found. Available countries: {', '.join(countries)}", err=True)
+    if not matching_values:
+        click.echo(f"Error: No {by} matching '{pattern}' found. Available {by}s: {', '.join(values)}", err=True)
         return
     
-    if len(matching_countries) > 1:
-        click.echo(f"Error: Ambiguous match '{country}' matches multiple countries: {', '.join(matching_countries)}", err=True)
+    if len(matching_values) > 1:
+        click.echo(f"Error: Ambiguous match '{pattern}' matches multiple {by}s: {', '.join(matching_values)}", err=True)
         return
         
-    matched_country = matching_countries[0]
-    filtered_nodes = [node for node in nodes if node["country"] == matched_country]
+    matched_value = matching_values[0]
+    filtered_nodes = [node for node in nodes if node[by] == matched_value]
     selected_node = random.choice(filtered_nodes)
     node_ip = selected_node["ip"]
 
