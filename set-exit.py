@@ -28,8 +28,6 @@ def main(pattern, hostname, city, dry_run):
 
     PATTERN: Text to match (e.g. Sweden, London, us-nyc)
     """
-    output = get_exit_node_list()
-    nodes = parse_exit_nodes(output)
 
     if hostname:
         field = "hostname"
@@ -37,6 +35,29 @@ def main(pattern, hostname, city, dry_run):
         field = "city"
     else:
         field = "country"
+
+    selected_node = get_node(field, pattern)
+    node_ip = selected_node["ip"]
+
+    if dry_run:
+        click.echo(
+            f"Would set exit node to: {node_ip} ({selected_node['hostname']}, {selected_node['city']}, {selected_node['country']})"
+        )
+        return
+
+    set_exit_node(node_ip)
+
+
+def get_node(field, pattern):
+    if pattern == "none":
+        return {
+            "ip": "",
+            "hostname": "",
+            "city": "",
+            "country": "",
+        }
+    output = get_exit_node_list()
+    nodes = parse_exit_nodes(output)
 
     values = get_unique_values(nodes, field)
 
@@ -69,13 +90,7 @@ def main(pattern, hostname, city, dry_run):
         click.echo("Invalid IP address format.", err=True)
         return
 
-    if dry_run:
-        click.echo(
-            f"Would set exit node to: {node_ip} ({selected_node['hostname']}, {selected_node['city']}, {selected_node['country']})"
-        )
-        return
-
-    set_exit_node(node_ip)
+    return selected_node
 
 
 def get_exit_node_list():
